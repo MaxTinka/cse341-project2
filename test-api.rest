@@ -1,0 +1,68 @@
+### ========== CONTACTS TESTS ==========
+
+### GET all contacts
+GET http://localhost:3000/contacts
+
+### GET single contact (replace ID after you create one)
+GET http://localhost:3000/contacts/YOUR_ID_HERE
+
+### POST - Create a contact
+POST http://localhost:3000/contacts
+Content-Type: application/json
+
+{
+    "firstName": "Max",
+    "lastName": "Tinka",
+    "email": "maxtinka7@gmail.com",
+    "favoriteColor": "red",
+    "birthday": "1996-09-16"
+}
+
+### PUT - Update a contact (replace ID)
+PUT http://localhost:3000/contacts/YOUR_ID_HERE
+Content-Type: application/json
+
+{
+    "firstName": "Max",
+    "lastName": "Tinka",
+    "email": "maxtinka7@gmail.com",
+    "favoriteColor": "purple",
+    "birthday": "1996-09-16"
+}
+
+### DELETE - Delete a contact (replace ID)
+DELETE http://localhost:3000/contacts/YOUR_ID_HERE
+
+### ========== USERS TESTS ==========
+
+### GET all users
+GET http://localhost:3000/users
+
+### POST - Create a user
+POST http://localhost:3000/users
+Content-Type: application/json
+
+{
+    "username": "maxtinka",
+    "email": "maxtinka7@gmail.com",
+    "firstName": "Max",
+    "lastName": "Tinka",
+    "age": 28,
+    "isActive": true
+}
+
+### PUT - Update a user (replace ID)
+PUT http://localhost:3000/users/YOUR_USER_ID_HERE
+Content-Type: application/json
+
+{
+    "username": "maxtinka",
+    "email": "maxtinka7@gmail.com",
+    "firstName": "Max",
+    "lastName": "Tinka",
+    "age": 29,
+    "isActive": true
+}
+
+### DELETE - Delete a user (replace ID)
+DELETE http://localhost:3000/users/YOUR_USER_ID_HERE

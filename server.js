@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
-const swaggerFile = require('./swagger-output.json');
+const swaggerDocument = require('./swagger-output.json');
 
 dotenv.config();
 console.log('MONGODB_URI:', process.env.MONGODB_URI);
@@ -23,7 +23,7 @@ app.use('/contacts', contactsRoutes);
 app.use('/users', usersRoutes);
 
 // Swagger documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerFile));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Root route
 app.get('/', (req, res) => {
