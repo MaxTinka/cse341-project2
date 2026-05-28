@@ -42,10 +42,52 @@ const swaggerOptions = {
         openapi: '3.0.0',
         info: {
             title: 'Project 2 CRUD API',
-            description: 'Contacts and Users API',
+            description: 'Contacts and Users API with full CRUD operations',
             version: '1.0.0',
+            contact: {
+                name: 'Max Tinka',
+                email: 'maxtinka7@gmail.com',
+            },
         },
-        servers: [{ url: 'http://localhost:3000' }],
+        servers: [
+            {
+                url: 'https://cse341-project2-raso.onrender.com',
+                description: 'Production server (Render)',
+            },
+            {
+                url: 'http://localhost:3000',
+                description: 'Development server',
+            },
+        ],
+        components: {
+            schemas: {
+                Contact: {
+                    type: 'object',
+                    properties: {
+                        firstName: { type: 'string', example: 'John' },
+                        lastName: { type: 'string', example: 'Doe' },
+                        email: { type: 'string', example: 'john@example.com' },
+                        phone: { type: 'string', example: '1234567890' },
+                        address: { type: 'string', example: '123 Main St' },
+                        city: { type: 'string', example: 'New York' },
+                        favoriteColor: { type: 'string', example: 'blue' },
+                        birthday: { type: 'string', format: 'date', example: '1990-01-01' },
+                        notes: { type: 'string', example: 'Friend from college' },
+                    },
+                },
+                User: {
+                    type: 'object',
+                    properties: {
+                        username: { type: 'string', example: 'johndoe' },
+                        email: { type: 'string', example: 'john@example.com' },
+                        firstName: { type: 'string', example: 'John' },
+                        lastName: { type: 'string', example: 'Doe' },
+                        age: { type: 'number', example: 30 },
+                        isActive: { type: 'boolean', example: true },
+                    },
+                },
+            },
+        },
     },
     apis: ['./routes/*.js'],
 };
