@@ -1,4 +1,5 @@
 const express = require('express');
+const auth = require('./auth');
 const router = express.Router();
 const Contact = require('../models/Contact');
 
@@ -7,9 +8,16 @@ const Contact = require('../models/Contact');
  * /contacts:
  *   get:
  *     summary: Get all contacts
+ *     tags: [Contacts]
  *     responses:
  *       200:
  *         description: List of all contacts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Contact'
  */
 router.get('/', async (req, res) => {
   try {
@@ -25,6 +33,7 @@ router.get('/', async (req, res) => {
  * /contacts/{id}:
  *   get:
  *     summary: Get a single contact by ID
+ *     tags: [Contacts]
  *     parameters:
  *       - in: path
  *         name: id
@@ -51,45 +60,62 @@ router.get('/:id', async (req, res) => {
  * @swagger
  * /contacts:
  *   post:
- *     summary: Create a new contact
- *     parameters:
- *       - in: body
- *         name: body
- *         required: true
- *         schema:
- *           type: object
- *           required:
- *             - firstName
- *             - lastName
- *             - email
- *             - favoriteColor
- *             - birthday
- *           properties:
- *             firstName:
- *               type: string
- *               example: Max
- *             lastName:
- *               type: string
- *               example: Tinka
- *             email:
- *               type: string
- *               example: maxtinka7@gmail.com
- *             favoriteColor:
- *               type: string
- *               example: red
- *             birthday:
- *               type: string
- *               format: date
- *               example: 1996-09-16
+ *     summary: Create a new contact (Authentication Required)
+ *     tags: [Contacts]
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - firstName
+ *               - lastName
+ *               - email
+ *               - favoriteColor
+ *               - birthday
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: Max
+ *               lastName:
+ *                 type: string
+ *                 example: Tinka
+ *               email:
+ *                 type: string
+ *                 example: maxtinka7@gmail.com
+ *               phone:
+ *                 type: string
+ *                 example: 1234567890
+ *               address:
+ *                 type: string
+ *                 example: 123 Main St
+ *               city:
+ *                 type: string
+ *                 example: New York
+ *               favoriteColor:
+ *                 type: string
+ *                 example: red
+ *               birthday:
+ *                 type: string
+ *                 format: date
+ *                 example: 1996-09-16
+ *               notes:
+ *                 type: string
+ *                 example: Friend from college
  *     responses:
  *       201:
  *         description: Contact created successfully
  *       400:
  *         description: Missing required fields
+ *       401:
+ *         description: Authentication required
  */
-router.post('/', async (req, res) => {
+router.post('/', auth.ensureAuthenticated, async (req, res) => {
   try {
-    const { firstName, lastName, email, favoriteColor, birthday } = req.body;
+    const { firstName, lastName, email, phone, address, city, favoriteColor, birthday, notes } = req.body;
     
     if (!firstName || !lastName || !email || !favoriteColor || !birthday) {
       return res.status(400).json({ 
@@ -101,8 +127,12 @@ router.post('/', async (req, res) => {
       firstName,
       lastName,
       email,
+      phone,
+      address,
+      city,
       favoriteColor,
-      birthday
+      birthday,
+      notes
     });
     
     const savedContact = await newContact.save();
@@ -112,6 +142,9 @@ router.post('/', async (req, res) => {
       contact: savedContact
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
     res.status(500).json({ message: error.message });
   }
 });
@@ -120,43 +153,57 @@ router.post('/', async (req, res) => {
  * @swagger
  * /contacts/{id}:
  *   put:
- *     summary: Update a contact by ID
+ *     summary: Update a contact by ID (Authentication Required)
+ *     tags: [Contacts]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *       - in: body
- *         name: body
- *         required: true
- *         schema:
- *           type: object
- *           properties:
- *             firstName:
- *               type: string
- *             lastName:
- *               type: string
- *             email:
- *               type: string
- *             favoriteColor:
- *               type: string
- *             birthday:
- *               type: string
- *               format: date
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               city:
+ *                 type: string
+ *               favoriteColor:
+ *                 type: string
+ *               birthday:
+ *                 type: string
+ *                 format: date
+ *               notes:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Contact updated successfully
+ *       401:
+ *         description: Authentication required
  *       404:
  *         description: Contact not found
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', auth.ensureAuthenticated, async (req, res) => {
   try {
-    const { firstName, lastName, email, favoriteColor, birthday } = req.body;
+    const { firstName, lastName, email, phone, address, city, favoriteColor, birthday, notes } = req.body;
     
     const updatedContact = await Contact.findByIdAndUpdate(
       req.params.id,
-      { firstName, lastName, email, favoriteColor, birthday },
+      { firstName, lastName, email, phone, address, city, favoriteColor, birthday, notes },
       { new: true, runValidators: true }
     );
     
@@ -177,7 +224,10 @@ router.put('/:id', async (req, res) => {
  * @swagger
  * /contacts/{id}:
  *   delete:
- *     summary: Delete a contact by ID
+ *     summary: Delete a contact by ID (Authentication Required)
+ *     tags: [Contacts]
+ *     security:
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -187,10 +237,12 @@ router.put('/:id', async (req, res) => {
  *     responses:
  *       200:
  *         description: Contact deleted successfully
+ *       401:
+ *         description: Authentication required
  *       404:
  *         description: Contact not found
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth.ensureAuthenticated, async (req, res) => {
   try {
     const deletedContact = await Contact.findByIdAndDelete(req.params.id);
     
