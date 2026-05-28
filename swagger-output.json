@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Project 2 CRUD API",
-    "description": "Contacts and Users API",
+    "description": "Contacts and Users API with full CRUD operations",
     "version": "1.0.0"
   },
   "host": "localhost:3000",

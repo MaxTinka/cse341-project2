@@ -9,22 +9,22 @@ const Contact = require('../models/Contact');
  *     summary: Get all contacts
  *     responses:
  *       200:
- *         description: List of contacts
+ *         description: List of all contacts
  */
 router.get('/', async (req, res) => {
-    try {
-        const contacts = await Contact.find();
-        res.status(200).json(contacts);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+  try {
+    const contacts = await Contact.find();
+    res.json(contacts);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 /**
  * @swagger
  * /contacts/{id}:
  *   get:
- *     summary: Get a contact by ID
+ *     summary: Get a single contact by ID
  *     parameters:
  *       - in: path
  *         name: id
@@ -38,13 +38,13 @@ router.get('/', async (req, res) => {
  *         description: Contact not found
  */
 router.get('/:id', async (req, res) => {
-    try {
-        const contact = await Contact.findById(req.params.id);
-        if (!contact) return res.status(404).json({ message: 'Contact not found' });
-        res.status(200).json(contact);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
+  try {
+    const contact = await Contact.findById(req.params.id);
+    if (!contact) return res.status(404).json({ message: 'Contact not found' });
+    res.json(contact);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 /**
@@ -52,102 +52,132 @@ router.get('/:id', async (req, res) => {
  * /contacts:
  *   post:
  *     summary: Create a new contact
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - firstName
- *               - lastName
- *               - email
- *               - favoriteColor
- *               - birthday
- *             properties:
- *               firstName:
- *                 type: string
- *                 example: John
- *               lastName:
- *                 type: string
- *                 example: Doe
- *               email:
- *                 type: string
- *                 example: john@example.com
- *               favoriteColor:
- *                 type: string
- *                 example: blue
- *               birthday:
- *                 type: string
- *                 format: date
- *                 example: 1990-01-01
+ *     parameters:
+ *       - in: body
+ *         name: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           required:
+ *             - firstName
+ *             - lastName
+ *             - email
+ *             - favoriteColor
+ *             - birthday
+ *           properties:
+ *             firstName:
+ *               type: string
+ *               example: Max
+ *             lastName:
+ *               type: string
+ *               example: Tinka
+ *             email:
+ *               type: string
+ *               example: maxtinka7@gmail.com
+ *             favoriteColor:
+ *               type: string
+ *               example: red
+ *             birthday:
+ *               type: string
+ *               format: date
+ *               example: 1996-09-16
  *     responses:
  *       201:
- *         description: Contact created
+ *         description: Contact created successfully
  *       400:
- *         description: Invalid input
+ *         description: Missing required fields
  */
 router.post('/', async (req, res) => {
-    try {
-        const newContact = new Contact(req.body);
-        const saved = await newContact.save();
-        res.status(201).json(saved);
-    } catch (error) {
-        if (error.code === 11000) return res.status(400).json({ message: 'Email already exists' });
-        if (error.name === 'ValidationError') return res.status(400).json({ message: error.message });
-        res.status(500).json({ message: error.message });
+  try {
+    const { firstName, lastName, email, favoriteColor, birthday } = req.body;
+    
+    if (!firstName || !lastName || !email || !favoriteColor || !birthday) {
+      return res.status(400).json({ 
+        message: 'All fields are required: firstName, lastName, email, favoriteColor, birthday' 
+      });
     }
+    
+    const newContact = new Contact({
+      firstName,
+      lastName,
+      email,
+      favoriteColor,
+      birthday
+    });
+    
+    const savedContact = await newContact.save();
+    res.status(201).json({ 
+      message: 'Contact created successfully',
+      id: savedContact._id,
+      contact: savedContact
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 /**
  * @swagger
  * /contacts/{id}:
  *   put:
- *     summary: Update a contact
+ *     summary: Update a contact by ID
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               firstName:
- *                 type: string
- *               lastName:
- *                 type: string
- *               email:
- *                 type: string
- *               favoriteColor:
- *                 type: string
- *               birthday:
- *                 type: string
+ *       - in: body
+ *         name: body
+ *         required: true
+ *         schema:
+ *           type: object
+ *           properties:
+ *             firstName:
+ *               type: string
+ *             lastName:
+ *               type: string
+ *             email:
+ *               type: string
+ *             favoriteColor:
+ *               type: string
+ *             birthday:
+ *               type: string
+ *               format: date
  *     responses:
  *       200:
- *         description: Contact updated
+ *         description: Contact updated successfully
  *       404:
  *         description: Contact not found
  */
 router.put('/:id', async (req, res) => {
-    try {
-        const updated = await Contact.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-        if (!updated) return res.status(404).json({ message: 'Contact not found' });
-        res.status(200).json(updated);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+  try {
+    const { firstName, lastName, email, favoriteColor, birthday } = req.body;
+    
+    const updatedContact = await Contact.findByIdAndUpdate(
+      req.params.id,
+      { firstName, lastName, email, favoriteColor, birthday },
+      { new: true, runValidators: true }
+    );
+    
+    if (!updatedContact) {
+      return res.status(404).json({ message: 'Contact not found' });
     }
+    
+    res.status(200).json({ 
+      message: 'Contact updated successfully',
+      contact: updatedContact
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 /**
  * @swagger
  * /contacts/{id}:
  *   delete:
- *     summary: Delete a contact
+ *     summary: Delete a contact by ID
  *     parameters:
  *       - in: path
  *         name: id
@@ -156,18 +186,22 @@ router.put('/:id', async (req, res) => {
  *           type: string
  *     responses:
  *       200:
- *         description: Contact deleted
+ *         description: Contact deleted successfully
  *       404:
  *         description: Contact not found
  */
 router.delete('/:id', async (req, res) => {
-    try {
-        const deleted = await Contact.findByIdAndDelete(req.params.id);
-        if (!deleted) return res.status(404).json({ message: 'Contact not found' });
-        res.status(200).json({ message: 'Contact deleted' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
+  try {
+    const deletedContact = await Contact.findByIdAndDelete(req.params.id);
+    
+    if (!deletedContact) {
+      return res.status(404).json({ message: 'Contact not found' });
     }
+    
+    res.status(200).json({ message: 'Contact deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 module.exports = router;

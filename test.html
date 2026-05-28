@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CRUD API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        input, button { margin: 5px; padding: 8px; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f0f0f0; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Contacts CRUD API Test</h1>
+    
+    <h2>Create New Contact (POST)</h2>
+    <form id="contactForm">
+        First Name: <input type="text" id="firstName" required><br>
+        Last Name: <input type="text" id="lastName" required><br>
+        Email: <input type="email" id="email" required><br>
+        Favorite Color: <input type="text" id="favoriteColor" required><br>
+        Birthday: <input type="date" id="birthday" required><br>
+        <button type="submit">Create Contact</button>
+    </form>
+    
+    <h2>Get All Contacts (GET)</h2>
+    <button onclick="getContacts()">Get All Contacts</button>
+    <pre id="contactsResult"></pre>
+    
+    <h2>Get Contact by ID (GET)</h2>
+    <input type="text" id="getById" placeholder="Enter Contact ID">
+    <button onclick="getContactById()">Get Contact</button>
+    <pre id="singleResult"></pre>
+    
+    <h2>Update Contact (PUT)</h2>
+    <input type="text" id="updateId" placeholder="Contact ID"><br>
+    Favorite Color: <input type="text" id="updateColor" placeholder="New favorite color"><br>
+    <button onclick="updateContact()">Update Contact</button>
+    <pre id="updateResult"></pre>
+    
+    <h2>Delete Contact (DELETE)</h2>
+    <input type="text" id="deleteId" placeholder="Contact ID">
+    <button onclick="deleteContact()">Delete Contact</button>
+    <pre id="deleteResult"></pre>
+    
+    <script>
+        const API = 'http://localhost:3000/contacts';
+        
+        // POST - Create contact
+        document.getElementById('contactForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const contact = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                favoriteColor: document.getElementById('favoriteColor').value,
+                birthday: document.getElementById('birthday').value
+            };
+            try {
+                const response = await fetch(API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(contact)
+                });
+                const result = await response.json();
+                alert('Contact created! ID: ' + result._id);
+                document.getElementById('contactForm').reset();
+                getContacts();
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        };
+        
+        // GET all contacts
+        async function getContacts() {
+            const response = await fetch(API);
+            const data = await response.json();
+            document.getElementById('contactsResult').innerHTML = JSON.stringify(data, null, 2);
+        }
+        
+        // GET by ID
+        async function getContactById() {
+            const id = document.getElementById('getById').value;
+            const response = await fetch(API + '/' + id);
+            const data = await response.json();
+            document.getElementById('singleResult').innerHTML = JSON.stringify(data, null, 2);
+        }
+        
+        // PUT update
+        async function updateContact() {
+            const id = document.getElementById('updateId').value;
+            const color = document.getElementById('updateColor').value;
+            // First get current contact
+            const getResponse = await fetch(API + '/' + id);
+            const contact = await getResponse.json();
+            // Update favorite color
+            contact.favoriteColor = color;
+            const response = await fetch(API + '/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(contact)
+            });
+            const result = await response.json();
+            document.getElementById('updateResult').innerHTML = JSON.stringify(result, null, 2);
+            getContacts();
+        }
+        
+        // DELETE
+        async function deleteContact() {
+            const id = document.getElementById('deleteId').value;
+            const response = await fetch(API + '/' + id, {
+                method: 'DELETE'
+            });
+            const result = await response.json();
+            document.getElementById('deleteResult').innerHTML = JSON.stringify(result, null, 2);
+            getContacts();
+        }
+        
+        // Load contacts on page load
+        getContacts();
+    </script>
+</body>
+</html>
