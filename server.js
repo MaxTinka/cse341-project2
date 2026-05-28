@@ -4,7 +4,6 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const auth = require('./routes/auth');
 
 dotenv.config();
 
@@ -15,8 +14,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Auth routes (includes /auth/google, /auth/status, /auth/logout)
-app.use(auth.router);
+// Simple auth routes directly in server.js (no external file)
+app.get('/auth/status', (req, res) => {
+    res.json({ isAuthenticated: false, user: null });
+});
+
+app.get('/auth/google', (req, res) => {
+    res.json({ message: 'Google login would go here', redirect: 'https://accounts.google.com/o/oauth2/v2/auth' });
+});
+
+app.get('/auth/logout', (req, res) => {
+    res.json({ message: 'Logged out' });
+});
+
+app.get('/protected', (req, res) => {
+    res.status(401).json({ message: 'You must be logged in' });
+});
 
 // Regular Routes
 const contactsRoutes = require('./routes/contacts');
@@ -31,52 +44,15 @@ const swaggerOptions = {
         openapi: '3.0.0',
         info: {
             title: 'Project 2 CRUD API',
-            description: 'Contacts and Users API with full CRUD operations',
+            description: 'Contacts and Users API',
             version: '1.0.0',
-            contact: {
-                name: 'Max Tinka',
-                email: 'maxtinka7@gmail.com',
-            },
         },
         servers: [
             {
                 url: 'https://cse341-project2-raso.onrender.com',
-                description: 'Production server (Render)',
-            },
-            {
-                url: 'http://localhost:3000',
-                description: 'Development server',
+                description: 'Production server',
             },
         ],
-        components: {
-            schemas: {
-                Contact: {
-                    type: 'object',
-                    properties: {
-                        firstName: { type: 'string', example: 'John' },
-                        lastName: { type: 'string', example: 'Doe' },
-                        email: { type: 'string', example: 'john@example.com' },
-                        phone: { type: 'string', example: '1234567890' },
-                        address: { type: 'string', example: '123 Main St' },
-                        city: { type: 'string', example: 'New York' },
-                        favoriteColor: { type: 'string', example: 'blue' },
-                        birthday: { type: 'string', format: 'date', example: '1990-01-01' },
-                        notes: { type: 'string', example: 'Friend from college' },
-                    },
-                },
-                User: {
-                    type: 'object',
-                    properties: {
-                        username: { type: 'string', example: 'johndoe' },
-                        email: { type: 'string', example: 'john@example.com' },
-                        firstName: { type: 'string', example: 'John' },
-                        lastName: { type: 'string', example: 'Doe' },
-                        age: { type: 'number', example: 30 },
-                        isActive: { type: 'boolean', example: true },
-                    },
-                },
-            },
-        },
     },
     apis: ['./routes/*.js'],
 };
@@ -97,12 +73,7 @@ mongoose.connect(MONGODB_URI)
     .then(() => {
         console.log('Connected to MongoDB');
         app.listen(PORT, () => {
-            console.log(`\n? Server: http://localhost:${PORT}`);
-            console.log(`? Auth: http://localhost:${PORT}/auth/status`);
-            console.log(`? Login: http://localhost:${PORT}/auth/google`);
-            console.log(`? Contacts: http://localhost:${PORT}/contacts`);
-            console.log(`? Users: http://localhost:${PORT}/users`);
-            console.log(`? Swagger: http://localhost:${PORT}/api-docs\n`);
+            console.log(`Server running on port ${PORT}`);
         });
     })
     .catch(err => console.error('MongoDB error:', err));
