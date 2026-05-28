@@ -9,7 +9,11 @@ const router = express.Router();
 router.use(session({
     secret: process.env.SESSION_SECRET || 'mySecretKey',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    }
 }));
 
 router.use(passport.initialize());
@@ -26,8 +30,8 @@ passport.deserializeUser((user, done) => {
 
 // Google OAuth Strategy
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID || 'your_client_id',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'your_client_secret',
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: '/auth/google/callback'
 }, (accessToken, refreshToken, profile, done) => {
     return done(null, profile);
@@ -56,7 +60,6 @@ router.get('/status', (req, res) => {
     });
 });
 
-// Middleware to protect routes
 function ensureAuthenticated(req, res, next) {
     if (req.isAuthenticated()) {
         return next();
