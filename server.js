@@ -2,125 +2,157 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const swaggerJsdoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
-const auth = require('./routes/auth');
 
 dotenv.config();
 
 const app = express();
 
-// Trust proxy (needed for Render HTTPS)
-app.set('trust proxy', 1);
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Debug: Log environment variables status
-console.log('=== Environment Variables Status ===');
-console.log('GOOGLE_CLIENT_ID exists:', !!process.env.GOOGLE_CLIENT_ID);
-console.log('GOOGLE_CLIENT_SECRET exists:', !!process.env.GOOGLE_CLIENT_SECRET);
-console.log('SESSION_SECRET exists:', !!process.env.SESSION_SECRET);
-console.log('MONGODB_URI exists:', !!process.env.MONGODB_URI);
-console.log('===================================');
-
-// Auth routes (includes /auth/google, /auth/status, /auth/logout)
-console.log('Mounting auth router...');
-app.use(auth.router);
-console.log('Auth router mounted successfully');
-
-// Simple test route (directly in server.js)
-app.get('/simple-test', (req, res) => {
-    res.json({ message: 'Simple test route works!', timestamp: new Date().toISOString() });
+// ============ AUTH ROUTES ============
+app.get('/auth/status', (req, res) => {
+    res.json({ authenticated: false, user: null });
 });
 
-// Another test route
-app.get('/ping', (req, res) => {
-    res.json({ message: 'pong', server: 'running' });
+app.get('/auth/google', (req, res) => {
+    res.json({ message: 'Google login would go here' });
 });
 
-// Regular Routes
-const contactsRoutes = require('./routes/contacts');
-const usersRoutes = require('./routes/users');
+app.get('/auth/logout', (req, res) => {
+    res.json({ message: 'Logged out' });
+});
 
-app.use('/contacts', contactsRoutes);
-app.use('/users', usersRoutes);
+app.get('/protected', (req, res) => {
+    res.status(401).json({ message: 'You must be logged in' });
+});
+// ============ END AUTH ROUTES ============
 
-// Swagger
-const swaggerOptions = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'Project 2 CRUD API',
-            description: 'Contacts and Users API with full CRUD operations',
-            version: '1.0.0',
-            contact: {
-                name: 'Max Tinka',
-                email: 'maxtinka7@gmail.com',
-            },
-        },
-        servers: [
-            {
-                url: 'https://cse341-project2-raso.onrender.com',
-                description: 'Production server (Render)',
-            },
-            {
-                url: 'http://localhost:3000',
-                description: 'Development server',
-            },
-        ],
-        components: {
-            schemas: {
-                Contact: {
-                    type: 'object',
-                    properties: {
-                        firstName: { type: 'string', example: 'John' },
-                        lastName: { type: 'string', example: 'Doe' },
-                        email: { type: 'string', example: 'john@example.com' },
-                        phone: { type: 'string', example: '1234567890' },
-                        address: { type: 'string', example: '123 Main St' },
-                        city: { type: 'string', example: 'New York' },
-                        favoriteColor: { type: 'string', example: 'blue' },
-                        birthday: { type: 'string', format: 'date', example: '1990-01-01' },
-                        notes: { type: 'string', example: 'Friend from college' },
-                    },
-                },
-                User: {
-                    type: 'object',
-                    properties: {
-                        username: { type: 'string', example: 'johndoe' },
-                        email: { type: 'string', example: 'john@example.com' },
-                        firstName: { type: 'string', example: 'John' },
-                        lastName: { type: 'string', example: 'Doe' },
-                        age: { type: 'number', example: 30 },
-                        isActive: { type: 'boolean', example: true },
-                    },
-                },
-            },
-        },
-    },
-    apis: ['./routes/*.js'],
-};
+// ============ CONTACTS ROUTES ============
+const Contact = require('./models/Contact');
 
-const swaggerDocs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.get('/contacts', async (req, res) => {
+    try {
+        const contacts = await Contact.find();
+        res.json(contacts);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.get('/contacts/:id', async (req, res) => {
+    try {
+        const contact = await Contact.findById(req.params.id);
+        if (!contact) return res.status(404).json({ message: 'Not found' });
+        res.json(contact);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/contacts', async (req, res) => {
+    try {
+        const { firstName, lastName, email, favoriteColor, birthday } = req.body;
+        if (!firstName || !lastName || !email || !favoriteColor || !birthday) {
+            return res.status(400).json({ message: 'All fields required' });
+        }
+        const newContact = new Contact(req.body);
+        const saved = await newContact.save();
+        res.status(201).json(saved);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.put('/contacts/:id', async (req, res) => {
+    try {
+        const updated = await Contact.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updated) return res.status(404).json({ message: 'Not found' });
+        res.json(updated);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.delete('/contacts/:id', async (req, res) => {
+    try {
+        const deleted = await Contact.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ message: 'Not found' });
+        res.json({ message: 'Deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+// ============ END CONTACTS ROUTES ============
+
+// ============ USERS ROUTES ============
+const User = require('./models/User');
+
+app.get('/users', async (req, res) => {
+    try {
+        const users = await User.find();
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.get('/users/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'Not found' });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/users', async (req, res) => {
+    try {
+        const { username, email, firstName, lastName } = req.body;
+        if (!username || !email || !firstName || !lastName) {
+            return res.status(400).json({ message: 'All fields required' });
+        }
+        const newUser = new User(req.body);
+        const saved = await newUser.save();
+        res.status(201).json(saved);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.put('/users/:id', async (req, res) => {
+    try {
+        const updated = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updated) return res.status(404).json({ message: 'Not found' });
+        res.json(updated);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.delete('/users/:id', async (req, res) => {
+    try {
+        const deleted = await User.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ message: 'Not found' });
+        res.json({ message: 'Deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+// ============ END USERS ROUTES ============
+
+// Test route
+app.get('/test', (req, res) => {
+    res.json({ message: 'Test route works!' });
+});
 
 // Root route
 app.get('/', (req, res) => {
     res.json({ 
         message: 'API is running',
-        endpoints: {
-            simple_test: '/simple-test',
-            ping: '/ping',
-            auth_status: '/auth/status',
-            auth_google: '/auth/google',
-            auth_logout: '/auth/logout',
-            contacts: '/contacts',
-            users: '/users',
-            swagger: '/api-docs'
-        }
+        routes: ['/test', '/auth/status', '/auth/google', '/contacts', '/users']
     });
 });
 
@@ -132,12 +164,7 @@ mongoose.connect(MONGODB_URI)
     .then(() => {
         console.log('Connected to MongoDB');
         app.listen(PORT, () => {
-            console.log(`\n? Server running on port ${PORT}`);
-            console.log(`? Simple test: http://localhost:${PORT}/simple-test`);
-            console.log(`? Auth status: http://localhost:${PORT}/auth/status`);
-            console.log(`? Google login: http://localhost:${PORT}/auth/google`);
-            console.log(`? Contacts: http://localhost:${PORT}/contacts`);
-            console.log(`? Swagger: http://localhost:${PORT}/api-docs\n`);
+            console.log(`Server running on port ${PORT}`);
         });
     })
     .catch(err => console.error('MongoDB error:', err));
