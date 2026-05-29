@@ -2,6 +2,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 dotenv.config();
 
@@ -143,6 +145,29 @@ app.delete('/users/:id', async (req, res) => {
 });
 // ============ END USERS ROUTES ============
 
+// ============ SWAGGER ============
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Project 2 CRUD API',
+            description: 'Contacts and Users API',
+            version: '1.0.0',
+        },
+        servers: [
+            {
+                url: 'https://cse341-project2-raso.onrender.com',
+                description: 'Production server',
+            },
+        ],
+    },
+    apis: ['./routes/*.js'],
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+// ============ END SWAGGER ============
+
 // Test route
 app.get('/test', (req, res) => {
     res.json({ message: 'Test route works!' });
@@ -152,7 +177,7 @@ app.get('/test', (req, res) => {
 app.get('/', (req, res) => {
     res.json({ 
         message: 'API is running',
-        routes: ['/test', '/auth/status', '/auth/google', '/contacts', '/users']
+        routes: ['/test', '/auth/status', '/auth/google', '/contacts', '/users', '/api-docs']
     });
 });
 
