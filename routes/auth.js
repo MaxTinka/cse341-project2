@@ -1,69 +1,27 @@
 const express = require('express');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const session = require('express-session');
-
 const router = express.Router();
 
-// Session configuration
-router.use(session({
-    secret: process.env.SESSION_SECRET || 'mySecretKey',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-    }
-}));
-
-router.use(passport.initialize());
-router.use(passport.session());
-
-// Serialize user
-passport.serializeUser((user, done) => {
-    done(null, user);
+// Simple test route
+router.get('/test', (req, res) => {
+    res.json({ message: 'Auth router is working!' });
 });
 
-passport.deserializeUser((user, done) => {
-    done(null, user);
-});
-
-// Google OAuth Strategy
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: '/auth/google/callback'
-}, (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
-}));
-
-// Routes
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-router.get('/google/callback',
-    passport.authenticate('google', { failureRedirect: '/' }),
-    (req, res) => {
-        res.redirect('/');
-    }
-);
-
-router.get('/logout', (req, res) => {
-    req.logout(() => {
-        res.redirect('/');
-    });
-});
-
+// Status route
 router.get('/status', (req, res) => {
-    res.json({
-        isAuthenticated: req.isAuthenticated() || false,
-        user: req.user || null
-    });
+    res.json({ isAuthenticated: false, user: null });
+});
+
+// Google route (placeholder)
+router.get('/google', (req, res) => {
+    res.json({ message: 'Google login would go here', redirect: 'https://accounts.google.com/o/oauth2/v2/auth' });
+});
+
+// Logout route
+router.get('/logout', (req, res) => {
+    res.json({ message: 'Logged out' });
 });
 
 function ensureAuthenticated(req, res, next) {
-    if (req.isAuthenticated()) {
-        return next();
-    }
     res.status(401).json({ message: 'You must be logged in to access this route' });
 }
 
