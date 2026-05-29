@@ -13,7 +13,7 @@ router.get('/status', (req, res) => {
 
 // Google route (placeholder)
 router.get('/google', (req, res) => {
-    res.json({ message: 'Google login would go here', redirect: 'https://accounts.google.com/o/oauth2/v2/auth' });
+    res.json({ message: 'Google login endpoint', redirect: 'https://accounts.google.com/o/oauth2/v2/auth' });
 });
 
 // Logout route
